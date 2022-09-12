@@ -8,3 +8,5 @@
 /dataSources.local.xml
 /sweeter/.idea
 /sweeter/target
+/sweeter/*.iml
+
