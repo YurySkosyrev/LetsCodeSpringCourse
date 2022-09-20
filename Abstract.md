@@ -166,6 +166,16 @@ CSRF позволяет избежать хаккерских атак. Обра
 
 Так же необходимо в классе WebSecurityConfig указать, что допустим путь /registration.
 
+# Spring Boot Jpa (Hibernate): добавляем связи между таблицами базы данных (one to many)
+
+Добавим к сообщение поле author типа User.
+
+Сделаем чтобы User implements UserDetails.
+
+Переопределяем методы UserDetails, всем присваиваем true, так как мы не реализуем эту логику, а без true работать не будет. isEnable() по смыслу как isActive().
+
+getAuthorities() пусть возвращает getRoles(), только нужно сделать чтобы Role extends GrantedAuthority.
+
 
 
 

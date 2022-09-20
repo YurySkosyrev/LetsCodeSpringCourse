@@ -9,6 +9,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
+/**
+ * Главный контроллер
+ * Обработка get-запроса с отображением всех записей
+ * Обработка post-запроса на добавление новой записи
+ * Обработка post-запроса на отображение записей по фильтру.
+ */
+
 @Controller
 public class MainController {
 

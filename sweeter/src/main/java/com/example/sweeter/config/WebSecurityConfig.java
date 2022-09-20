@@ -10,6 +10,24 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 
 import javax.sql.DataSource;
 
+/**
+ * Ниже приведена настройка безопасности, которая гарантирует,
+ * что только авторизованные пользователи смогут перейти на главную страницу
+ *
+ * -> @EnableWebMvcSecurity - включение поддержки безопасности Spring Security и Spring MVC интеграции.
+ *
+ * Метод configure(HttpSecurity) определяет, какие URL пути должны быть защищены, а какие нет.
+ * "/" и "/registration" настроены без требования к авторизации (метод permitAll())
+ * Ко всем остальным путям должна быть произведена аутентификация (authenticated())
+ *
+ * В методе configure(AuthenticationManagerBuilder auth) из БД достаём юзеров, пароли и их роли
+ * dataSource нужен для того чтобы ходить в БД
+ * passwordEncoder задаёт способ шифрования паролей
+ * usersByUsernameQuery нужен для того чтобы система могла найти пользователя по его имени.
+ * Запрос именно в таком порядке!!!
+ * authoritiesByUsernameQuery - помогает Spring получить список пользователей с их ролями
+ */
+
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
