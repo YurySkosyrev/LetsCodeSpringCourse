@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/LetsCodeSpringCourse.iml" filepath="$PROJECT_DIR$/.idea/LetsCodeSpringCourse.iml" />
+      <module fileurl="file://$PROJECT_DIR$/sweeter/sweeter.iml" filepath="$PROJECT_DIR$/sweeter/sweeter.iml" />
+    </modules>
+  </component>
+</project>

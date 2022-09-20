@@ -1,24 +1,20 @@
-package com.example.sweeter;
+package com.example.sweeter.controller;
 
 import com.example.sweeter.domain.Message;
 import com.example.sweeter.repository.MessageRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
 import java.util.Map;
 
 @Controller
-public class GreetingController {
+public class MainController {
 
     private final MessageRepo messageRepo;
 
-    public GreetingController(MessageRepo messageRepo) {
+    public MainController(MessageRepo messageRepo) {
         this.messageRepo = messageRepo;
     }
 
