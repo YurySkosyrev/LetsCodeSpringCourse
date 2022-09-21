@@ -1,7 +1,9 @@
 package com.example.sweeter.controller;
 
 import com.example.sweeter.domain.Message;
+import com.example.sweeter.domain.User;
 import com.example.sweeter.repository.MessageRepo;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,13 +42,20 @@ public class MainController {
     }
 
     @PostMapping("/main")
-    public String add(@RequestParam String text, @RequestParam String tag,
+    public String add(
+            @AuthenticationPrincipal User user, //huck для проверки приходит ли user в debuge
+            @RequestParam String text,
+            @RequestParam String tag,
                       Map<String, Object> model){
-        Message message = new Message(text, tag);
+        Message message = new Message(text, tag, user);
 
         messageRepo.save(message);
 
-        return "redirect:/";
+        Iterable<Message> messages = messageRepo.findAll();
+
+        model.put("messages", messages);
+
+        return "main";
     }
 
     @PostMapping("filter")
