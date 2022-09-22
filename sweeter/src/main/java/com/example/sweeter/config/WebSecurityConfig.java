@@ -3,6 +3,7 @@ package com.example.sweeter.config;
 import com.example.sweeter.service.UserService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -24,10 +25,14 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
  * usersByUsernameQuery нужен для того чтобы система могла найти пользователя по его имени.
  * Запрос именно в таком порядке!!!
  * authoritiesByUsernameQuery - помогает Spring получить список пользователей с их ролями
+ *
+ * -> @EnableGlobalMethodSecurity(prePostEnabled = true) - нужно чтобы в UserController заработала
+ * проверка прав доступа у юзера перед выполнением методов
  */
 
 @Configuration
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 //    Больше не нужно получаем пользователей с помощью UserService
