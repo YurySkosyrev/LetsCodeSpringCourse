@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.UUID;
 
 /**
- * Сервис для получения пользователей из БД
+ * Сервис для работы с пользователями в БД
  */
 
 @Service

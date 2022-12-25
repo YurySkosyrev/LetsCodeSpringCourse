@@ -37,6 +37,7 @@ public class User implements UserDetails {
     private String password;
     private boolean active;
 
+//    e-mail пользователя и код активации, чтобы подтвердить, что user владеет этим email
     private String email;
     private String activationCode;
 
