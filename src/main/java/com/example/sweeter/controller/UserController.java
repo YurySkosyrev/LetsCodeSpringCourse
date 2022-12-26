@@ -2,16 +2,14 @@ package com.example.sweeter.controller;
 
 import com.example.sweeter.domain.Role;
 import com.example.sweeter.domain.User;
-import com.example.sweeter.repository.UserRepo;
+import com.example.sweeter.service.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Контроллер для управления пользователями
@@ -25,22 +23,23 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/user")
-@PreAuthorize("hasAuthority('ADMIN')")
 public class UserController {
 
-    private final UserRepo userRepo;
+    private final UserService userService;
 
-    public UserController(UserRepo userRepo) {
-        this.userRepo = userRepo;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
     public String userList(Model model){
-        model.addAttribute("users", userRepo.findAll());
+        model.addAttribute("users", userService.findAll());
         return "userList";
     }
 
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("{user}")
     public String userEditForm(@PathVariable User user, Model model){
         // благодаря Spring сразу получаем пользователя без обращения к БД
@@ -49,40 +48,35 @@ public class UserController {
         return "userEdit";
     }
 
-//    Чтобы сохранить пользователя нужно получить аргументы с сервера
-//    По параметру userId из формы userEdit.ftlh будем получать пользователя из БД
-//    Так же нам нужно получить список полей, который передаётся в этой форме
-//    Количество полей всегда разное и в БД попадут только отмеченные в чекбоксе
-//    Для этого сделаем ещё один RequestParam Map<String, String> form
-//    Так же в форме передаётся имя пользователя, его можно менять и мы должны его сохранить
-
-
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public String userSave(
             @RequestParam String username,
             @RequestParam Map<String, String> form,
             @RequestParam("userId") User user){
 
-//        Устанавливаем пользователю новое имя
-        user.setUsername(username);
+        userService.saveUser(user, username, form);
 
-//        Получаем список ролей, чтобы проверить, что они установлены данному пользователю
-        Set<String> roles = Arrays.stream(Role.values())
-                .map(Role::name)
-                .collect(Collectors.toSet());
-
-//        Очищаем массив ролей перед обновлением
-        user.getRoles().clear();
-
-//        Теперь нужно проверить, что форма содержит роли для данного пользователя
-//        и выбрать из всех полей формы именно роли
-        for (String key : form.keySet()){
-            if (roles.contains(key)){
-                user.getRoles().add(Role.valueOf(key));
-            }
-        }
-
-        userRepo.save(user);
         return "redirect:/user";
+    }
+
+
+//    @AuthenticationPrincipal User user) - ожидает получение пользователя из контекста, чтобы мы не получали его из БД
+    @GetMapping("profile")
+    public String getProfile(Model model, @AuthenticationPrincipal User user){
+        model.addAttribute("username", user.getUsername());
+        model.addAttribute("email", user.getEmail());
+
+        return "profile";
+    }
+
+    @PostMapping("profile")
+    public String updateProfile(@AuthenticationPrincipal User user,
+                                @RequestParam String password,
+                                @RequestParam String email){
+
+        userService.updateProfile(user, password, email);
+
+        return "redirect:/user.profile";
     }
 }
