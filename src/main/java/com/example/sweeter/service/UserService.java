@@ -3,9 +3,11 @@ package com.example.sweeter.service;
 import com.example.sweeter.domain.Role;
 import com.example.sweeter.domain.User;
 import com.example.sweeter.repository.UserRepo;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -21,10 +23,16 @@ public class UserService implements UserDetailsService {
 
     private final UserRepo userRepo;
     private final MailSenderService mailSender;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepo userRepo, MailSenderService mailSender) {
+    public UserService(UserRepo userRepo,
+                       MailSenderService mailSender,
+                       @Lazy PasswordEncoder passwordEncoder) {
+
         this.userRepo = userRepo;
         this.mailSender = mailSender;
+        this.passwordEncoder = passwordEncoder;
+
     }
 
     @Override
@@ -32,16 +40,19 @@ public class UserService implements UserDetailsService {
         return userRepo.findByUsername(username);
     }
 
-    public boolean addUser(User user){
+    public boolean addUser(User user) {
         User userFromDB = userRepo.findByUsername(user.getUsername());
 
-        if(userFromDB != null){
+        if (userFromDB != null) {
             return false;
         }
 
         user.setActive(false);
         user.setRoles(Collections.singleton(Role.USER));
         user.setActivationCode(UUID.randomUUID().toString());
+
+//      Устанавливаем пароль, зашифрованный passwordEncoder при регистрации и проверки логина
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         userRepo.save(user);
 
@@ -51,7 +62,7 @@ public class UserService implements UserDetailsService {
     }
 
     private void sendMessage(User user) {
-        if(!StringUtils.isEmpty(user.getEmail())){
+        if (!StringUtils.isEmpty(user.getEmail())) {
             String message = String.format(
                     "Hello, %s! \n" +
                             "Welcome to Sweater. Please, visit next link: " +
@@ -67,7 +78,7 @@ public class UserService implements UserDetailsService {
     public boolean activateUser(String code) {
         User user = userRepo.findByActivationCode(code);
 
-        if (user == null){
+        if (user == null) {
             return false;
         }
 
@@ -94,18 +105,18 @@ public class UserService implements UserDetailsService {
 //    Устанавливаем пользователю новое имя
         user.setUsername(username);
 
-//     Получаем список ролей, чтобы проверить, что они установлены данному пользователю
+//      Получаем список ролей, чтобы проверить, что они установлены данному пользователю
         Set<String> roles = Arrays.stream(Role.values())
                 .map(Role::name)
                 .collect(Collectors.toSet());
 
-//     Очищаем массив ролей перед обновлением
+//      Очищаем массив ролей перед обновлением
         user.getRoles().clear();
 
 //      Теперь нужно проверить, что форма содержит роли для данного пользователя
 //      и выбрать из всех полей формы именно роли
-        for (String key : form.keySet()){
-            if (roles.contains(key)){
+        for (String key : form.keySet()) {
+            if (roles.contains(key)) {
                 user.getRoles().add(Role.valueOf(key));
             }
         }
