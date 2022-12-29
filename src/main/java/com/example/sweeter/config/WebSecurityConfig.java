@@ -40,21 +40,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    /** Добавляем шифрование паролей. Так как encoder понадобится не только в одном месте
-     * создадим для него Bean
-     */
-    @Bean
-    public PasswordEncoder getPasswordEncoder(){
-        return new BCryptPasswordEncoder(8);
-    }
-
 //    Больше не нужно получаем пользователей с помощью UserService
 //    private final DataSource dataSource;
+
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
 
     public WebSecurityConfig(UserService userService,
-                             @Lazy PasswordEncoder passwordEncoder) {
+                             PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
     }

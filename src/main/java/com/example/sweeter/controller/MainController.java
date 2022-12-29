@@ -7,15 +7,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+
 
 /**
  * Главный контроллер
@@ -61,31 +64,45 @@ public class MainController {
     public String add(
             @AuthenticationPrincipal User user, //huck для проверки приходит ли user в debuge
             @RequestParam("file") MultipartFile file,
-            @RequestParam String text,
-            @RequestParam String tag,
-                      Map<String, Object> model) throws IOException {
-        Message message = new Message(text, tag, user);
+            @Valid Message message, //@Valid запускает валидацию
+            // так как валидация запущена, нужно получать список аргументов и ошибок валидации - bindingResult,
+            // должен идти перед Map иначе все ошибки будут сыпаться во View
+            BindingResult bindingResult,
+            Model model
+    ) throws IOException {
 
-        if (file != null && !file.getOriginalFilename().isEmpty()){
-            File uploadDir = new File(uploadPath);
+        message.setAuthor(user);
 
-            if(!uploadDir.exists()){ // если директория не существует - создаём новую
-                uploadDir.mkdir();
+        if (bindingResult.hasErrors()){
+            Map<String, String> errorsMap = UtilsController.getErrors(bindingResult);
+            model.mergeAttributes(errorsMap); // кладём ошибки в модель для отображения
+            model.addAttribute("message", message);
+        } else {
+
+            if (file != null && !file.getOriginalFilename().isEmpty()) {
+                File uploadDir = new File(uploadPath);
+
+                if (!uploadDir.exists()) { // если директория не существует - создаём новую
+                    uploadDir.mkdir();
+                }
+
+                String uuidFile = UUID.randomUUID().toString(); // чтобы не было коллизий, создаём уникальное имя файла
+                String resultFilename = uuidFile + "." + file.getOriginalFilename();
+
+                file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в файл на диске
+
+                message.setFilename(resultFilename);
             }
+            // при успешной валидации необходимо удалить у model атрибут message, чтобы после ввода сообщения
+            // данные не отображались на форме ввода
+            model.addAttribute("message", null);
 
-            String uuidFile = UUID.randomUUID().toString(); // чтобы не было коллизий, создаём уникальное имя файла
-            String resultFilename = uuidFile + "." + file.getOriginalFilename();
-
-            file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в файл на диске
-
-            message.setFilename(resultFilename);
+            messageRepo.save(message);
         }
-
-        messageRepo.save(message);
 
         Iterable<Message> messages = messageRepo.findAll();
 
-        model.put("messages", messages);
+        model.addAttribute("messages", messages);
 
         return "main";
     }
