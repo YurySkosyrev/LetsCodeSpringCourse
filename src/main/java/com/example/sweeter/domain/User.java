@@ -39,11 +39,6 @@ public class User implements UserDetails {
     private String username;
     @NotBlank(message = "Password name can`t be empty")
     private String password;
-
-    @Transient
-    @NotBlank(message = "Password confirmation can`t be empty") // Автоматическая валидация пароля
-    private String password2;
-
     private boolean active;
 
 //    e-mail пользователя и код активации, чтобы подтвердить, что user владеет этим email
