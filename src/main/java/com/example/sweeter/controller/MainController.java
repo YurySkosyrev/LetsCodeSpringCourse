@@ -1,5 +1,6 @@
 package com.example.sweeter.controller;
 
+import antlr.StringUtils;
 import com.example.sweeter.domain.Message;
 import com.example.sweeter.domain.User;
 import com.example.sweeter.repository.MessageRepo;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +19,7 @@ import javax.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -78,21 +81,7 @@ public class MainController {
             model.mergeAttributes(errorsMap); // кладём ошибки в модель для отображения
             model.addAttribute("message", message);
         } else {
-
-            if (file != null && !file.getOriginalFilename().isEmpty()) {
-                File uploadDir = new File(uploadPath);
-
-                if (!uploadDir.exists()) { // если директория не существует - создаём новую
-                    uploadDir.mkdir();
-                }
-
-                String uuidFile = UUID.randomUUID().toString(); // чтобы не было коллизий, создаём уникальное имя файла
-                String resultFilename = uuidFile + "." + file.getOriginalFilename();
-
-                file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в файл на диске
-
-                message.setFilename(resultFilename);
-            }
+            saveFile(file, message);
             // при успешной валидации необходимо удалить у model атрибут message, чтобы после ввода сообщения
             // данные не отображались на форме ввода
             model.addAttribute("message", null);
@@ -105,6 +94,63 @@ public class MainController {
         model.addAttribute("messages", messages);
 
         return "main";
+    }
+
+    private void saveFile(MultipartFile file, Message message) throws IOException {
+        if (file != null && !file.getOriginalFilename().isEmpty()) {
+            File uploadDir = new File(uploadPath);
+
+            if (!uploadDir.exists()) { // если директория не существует - создаём новую
+                uploadDir.mkdir();
+            }
+
+            String uuidFile = UUID.randomUUID().toString(); // чтобы не было коллизий, создаём уникальное имя файла
+            String resultFilename = uuidFile + "." + file.getOriginalFilename();
+
+            file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в файл на диске
+
+            message.setFilename(resultFilename);
+        }
+    }
+
+    @GetMapping("/user-messages/{user}")
+    public String userMessages(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable(name="user") User user,
+            Model model,
+            @RequestParam(required = false) Message message
+    ){
+        Set<Message> messages = user.getMessages();
+
+        model.addAttribute("messages", messages);
+        model.addAttribute("message", message);
+        model.addAttribute("isCurrentUser", currentUser.equals(user));
+        return "userMessages";
+    }
+
+    @PostMapping("/user-messages/{user}")
+    public String updateMessage(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable(name="user") Long user,
+            @RequestParam("id") Message message,
+            @RequestParam("text") String text,
+            @RequestParam("tag") String tag,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        if(message.getAuthor().equals(currentUser)){
+            if(!text.isEmpty()){
+                message.setText(text);
+            }
+
+            if(!tag.isEmpty()){
+                message.setTag(tag);
+            }
+
+            saveFile(file, message);
+
+            messageRepo.save(message);
+        }
+        return "redirect:/user-messages/" + user;
     }
 
 }
