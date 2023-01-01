@@ -1,9 +1,9 @@
 package com.example.sweeter.controller;
 
-import antlr.StringUtils;
 import com.example.sweeter.domain.Message;
 import com.example.sweeter.domain.User;
 import com.example.sweeter.repository.MessageRepo;
+import com.example.sweeter.repository.UserRepo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -34,9 +34,12 @@ import java.util.UUID;
 public class MainController {
 
     private final MessageRepo messageRepo;
+    private final UserRepo userRepo;
 
-    public MainController(MessageRepo messageRepo) {
+    public MainController(MessageRepo messageRepo,
+                          UserRepo userRepo) {
         this.messageRepo = messageRepo;
+        this.userRepo = userRepo;
     }
 
     @Value("${upload.path}") // Spring найдёт в properties переменную upload.path и подставит её в нашу
@@ -116,15 +119,22 @@ public class MainController {
     @GetMapping("/user-messages/{user}")
     public String userMessages(
             @AuthenticationPrincipal User currentUser,
-            @PathVariable(name="user") User user,
+            @PathVariable(name = "user") User varUser,
             Model model,
             @RequestParam(required = false) Message message
     ){
+        User user = userRepo.getById(varUser.getId());
+
         Set<Message> messages = user.getMessages();
 
+        model.addAttribute("userChannel", user);
+        model.addAttribute("subscriptionsCount", user.getSubscriptions().size());
+        model.addAttribute("subscribersCount", user.getSubscribers().size());
+        model.addAttribute("isSubscriber", user.getSubscribers().contains(currentUser));
         model.addAttribute("messages", messages);
         model.addAttribute("message", message);
         model.addAttribute("isCurrentUser", currentUser.equals(user));
+
         return "userMessages";
     }
 
