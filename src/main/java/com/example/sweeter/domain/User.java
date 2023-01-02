@@ -1,6 +1,7 @@
 package com.example.sweeter.domain;
 
 import lombok.Data;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -33,6 +34,7 @@ import java.util.Set;
 @Entity
 @Table(name="usr")
 @Data
+@ToString(of = {"id", "username", "active", "email"})
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
