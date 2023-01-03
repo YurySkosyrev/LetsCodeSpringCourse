@@ -4,7 +4,7 @@
         <form method="get" action="/main" class="row g-2 col-lg-6">
             <div class="col-lg-4">
                 <input class="form-control" type="text" name="filter" value="${filter?ifExists}"
-                       placeholder="Search by tag">
+                       placeholder="Search by tag"/>
             </div>
             <div class="col-lg-auto">
                 <button class="btn btn-primary ms-6" type="submit">Search</button>
