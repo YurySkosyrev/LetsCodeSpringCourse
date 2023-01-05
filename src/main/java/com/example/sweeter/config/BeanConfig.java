@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class BeanConfig {
+
     // Добавляем шифрование паролей. Так как encoder понадобится не только в одном месте создадим для него Bean
     @Bean
     public PasswordEncoder getPasswordEncoder(){
