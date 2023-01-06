@@ -4,6 +4,7 @@ import com.example.sweeter.domain.Message;
 import com.example.sweeter.domain.User;
 import com.example.sweeter.repository.MessageRepo;
 import com.example.sweeter.repository.UserRepo;
+import com.example.sweeter.service.MessageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,15 +36,18 @@ import java.util.UUID;
  */
 
 @Controller
-public class MainController {
+public class MessageController {
 
     private final MessageRepo messageRepo;
     private final UserRepo userRepo;
+    private final MessageService messageService;
 
-    public MainController(MessageRepo messageRepo,
-                          UserRepo userRepo) {
+    public MessageController(MessageRepo messageRepo,
+                             UserRepo userRepo,
+                             MessageService messageService) {
         this.messageRepo = messageRepo;
         this.userRepo = userRepo;
+        this.messageService = messageService;
     }
 
     @Value("${upload.path}") // Spring найдёт в properties переменную upload.path и подставит её в нашу
@@ -60,13 +64,7 @@ public class MainController {
                        @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable)
     //SQL не гарантирует отсортированную выборку, поэтому сортируем по id и указываем порядок
     {
-        Page<Message> page;
-
-        if(filter != null && !filter.isEmpty()) {
-            page = messageRepo.findByTag(filter, pageable);
-        } else {
-            page = messageRepo.findAll(pageable);
-        }
+        Page<Message> page = messageService.messageList(pageable, filter);
 
         model.addAttribute("page", page);
         model.addAttribute("url", "/main");
@@ -130,7 +128,8 @@ public class MainController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable(name = "user") User varUser,
             Model model,
-            @RequestParam(required = false) Message message
+            @RequestParam(required = false) Message message,
+            @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable
     ){
         User user = userRepo.getById(varUser.getId());
 
@@ -143,6 +142,7 @@ public class MainController {
         model.addAttribute("messages", messages);
         model.addAttribute("message", message);
         model.addAttribute("isCurrentUser", currentUser.equals(user));
+        model.addAttribute("url", "/user-messages/" + user.getId());
 
         return "userMessages";
     }
