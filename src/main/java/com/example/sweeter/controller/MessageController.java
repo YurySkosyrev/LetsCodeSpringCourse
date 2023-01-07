@@ -2,6 +2,7 @@ package com.example.sweeter.controller;
 
 import com.example.sweeter.domain.Message;
 import com.example.sweeter.domain.User;
+import com.example.sweeter.domain.dto.MessageDto;
 import com.example.sweeter.repository.MessageRepo;
 import com.example.sweeter.repository.UserRepo;
 import com.example.sweeter.service.MessageService;
@@ -14,11 +15,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.io.File;
@@ -61,10 +62,10 @@ public class MessageController {
     @GetMapping("/main")
     public String main(@RequestParam(required = false, defaultValue = "") String filter,
                        Model model,
-                       @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable)
-    //SQL не гарантирует отсортированную выборку, поэтому сортируем по id и указываем порядок
+                       @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable, //SQL не гарантирует отсортированную выборку, поэтому сортируем по id и указываем порядок
+                       @AuthenticationPrincipal User user)
     {
-        Page<Message> page = messageService.messageList(pageable, filter);
+        Page<MessageDto> page = messageService.messageList(pageable, filter, user);
 
         model.addAttribute("page", page);
         model.addAttribute("url", "/main");
@@ -75,6 +76,7 @@ public class MessageController {
 
     @PostMapping("/main")
     public String add(
+            @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal User user, //huck для проверки приходит ли user в debuge
             @RequestParam("file") MultipartFile file,
             @Valid Message message, //@Valid запускает валидацию
@@ -99,9 +101,10 @@ public class MessageController {
             messageRepo.save(message);
         }
 
-        Iterable<Message> messages = messageRepo.findAll();
+        Page<MessageDto> page = messageService.messageList(pageable, "", user);
 
-        model.addAttribute("messages", messages);
+        model.addAttribute("page", page);
+        model.addAttribute("url", "/main");
 
         return "main";
     }
@@ -123,26 +126,26 @@ public class MessageController {
         }
     }
 
-    @GetMapping("/user-messages/{user}")
+    @GetMapping("/user-messages/{author}")
     public String userMessages(
             @AuthenticationPrincipal User currentUser,
-            @PathVariable(name = "user") User varUser,
+            @PathVariable(name = "author") User varUser,
             Model model,
             @RequestParam(required = false) Message message,
             @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable
     ){
-        User user = userRepo.getById(varUser.getId());
+        User author = userRepo.getById(varUser.getId());
 
-        Set<Message> messages = user.getMessages();
+        Page<MessageDto> page = messageService.messageListForUser(pageable, currentUser, author);
 
-        model.addAttribute("userChannel", user);
-        model.addAttribute("subscriptionsCount", user.getSubscriptions().size());
-        model.addAttribute("subscribersCount", user.getSubscribers().size());
-        model.addAttribute("isSubscriber", user.getSubscribers().contains(currentUser));
-        model.addAttribute("messages", messages);
+        model.addAttribute("userChannel", author);
+        model.addAttribute("subscriptionsCount", author.getSubscriptions().size());
+        model.addAttribute("subscribersCount", author.getSubscribers().size());
+        model.addAttribute("isSubscriber", author.getSubscribers().contains(currentUser));
+        model.addAttribute("page", page);
         model.addAttribute("message", message);
-        model.addAttribute("isCurrentUser", currentUser.equals(user));
-        model.addAttribute("url", "/user-messages/" + user.getId());
+        model.addAttribute("isCurrentUser", currentUser.equals(author));
+        model.addAttribute("url", "/user-messages/" + author.getId());
 
         return "userMessages";
     }
@@ -170,6 +173,30 @@ public class MessageController {
             messageRepo.save(message);
         }
         return "redirect:/user-messages/" + user;
+    }
+
+    @GetMapping("/messages/{message}/like")
+    public String like(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Message message,
+            RedirectAttributes redirectAttributes, // позволяют пробросить аргументы в метод в который мы делаем redirect
+            @RequestHeader(required = false) String referer // получаем страницу, с которой пришли с лайком
+    ) {
+        Set<User> likes = message.getLikes();
+
+        if (likes.contains(currentUser)){
+            likes.remove(currentUser);
+        } else {
+            likes.add(currentUser);
+        }
+
+        UriComponents components = UriComponentsBuilder.fromHttpUrl(referer).build(); // используется для извлечения параметров с той страницы, откуда мы пришли
+
+        components.getQueryParams()
+                .entrySet()
+                .forEach(pair -> redirectAttributes.addAttribute(pair.getKey(), pair.getValue()));
+
+        return "redirect:" + components.getPath();
     }
 
 }

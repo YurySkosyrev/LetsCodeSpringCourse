@@ -1,5 +1,6 @@
 package com.example.sweeter.domain;
 
+import com.example.sweeter.domain.util.MessageHelper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,8 @@ import org.hibernate.validator.constraints.Length;
 import javax.validation.constraints.NotBlank;
 
 import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Сущность Message, для хранения сообщений в БД
@@ -48,8 +51,16 @@ public class Message {
 
     private String filename;
 
-    public String getAuthorName(){
-        return author != null ? author.getUsername() : "<none>";
+    @ManyToMany
+    @JoinTable(
+            name = "message_likes",
+            joinColumns = { @JoinColumn(name = "message_id") },
+            inverseJoinColumns = { @JoinColumn(name = "user_id")}
+    )
+    private Set<User> likes = new HashSet<>();
+
+    public String getAuthorName() {
+        return MessageHelper.getAuthorName(author);
     }
 
     public Message(String text, String tag, User user) {
