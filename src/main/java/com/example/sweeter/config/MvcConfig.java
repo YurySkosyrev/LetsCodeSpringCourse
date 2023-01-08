@@ -1,13 +1,11 @@
 package com.example.sweeter.config;
 
+import com.example.sweeter.util.RedirectInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistration;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.*;
 
 /**
  * Приложение основано на Spring MVC.
@@ -39,5 +37,10 @@ public class MvcConfig implements WebMvcConfigurer {
                .addResourceLocations("file:" + uploadPath + "/");
        registry.addResourceHandler("/static/**") // ** - значит путь и всю иерархию
                .addResourceLocations("classpath:static/"); // ресурсы будут искаться не в конкретной директории, а в дереве проекта
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new RedirectInterceptor());
     }
 }
