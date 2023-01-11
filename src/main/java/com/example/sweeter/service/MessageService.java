@@ -30,6 +30,10 @@ public class MessageService {
 
     }
 
+    public void saveMessage(Message message) {
+        messageRepo.save(message);
+    }
+
     public Page<MessageDto> messageListForUser(Pageable pageable, User author, User currentUser) {
         if (currentUser.equals(author)) {
             return messageRepo.findByUser(pageable, author);

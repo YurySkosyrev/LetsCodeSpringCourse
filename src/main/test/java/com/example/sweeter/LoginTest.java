@@ -1,6 +1,6 @@
 package com.example.sweeter;
 
-import com.example.sweeter.controller.MessageController;
+import com.example.sweeter.controller.MainController;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ public class LoginTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private MessageController mainController;
+    private MainController mainController;
 
     // Через подмененный web-слой делаем get-запрос на главную страницу и проверяем ответ
     @Test

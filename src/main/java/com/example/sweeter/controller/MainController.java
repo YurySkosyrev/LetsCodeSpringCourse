@@ -6,6 +6,7 @@ import com.example.sweeter.domain.dto.MessageDto;
 import com.example.sweeter.repository.MessageRepo;
 import com.example.sweeter.repository.UserRepo;
 import com.example.sweeter.service.MessageService;
+import com.example.sweeter.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,17 +16,16 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 
@@ -37,34 +37,40 @@ import java.util.UUID;
  */
 
 @Controller
-public class MessageController {
+public class MainController {
 
-    private final MessageRepo messageRepo;
-    private final UserRepo userRepo;
+    private final UserService userService;
     private final MessageService messageService;
 
-    public MessageController(MessageRepo messageRepo,
-                             UserRepo userRepo,
-                             MessageService messageService) {
-        this.messageRepo = messageRepo;
-        this.userRepo = userRepo;
+    public MainController(UserService userService,
+                          MessageService messageService) {
+        this.userService = userService;
         this.messageService = messageService;
     }
 
-    @Value("${upload.path}") // Spring найдёт в properties переменную upload.path и подставит её в нашу
+    // Spring найдёт в application.properties переменную upload.path и подставит её в ${uploadPath}
+    @Value("${upload.path}")
     private String uploadPath;
+
 
     @GetMapping("/")
     public String greeting() {
         return "greeting";
     }
 
+    /**
+     * Главный контроллер
+     * Обработка get-запроса с отображением всех записей
+     * Обработка post-запроса на добавление новой записи
+     * Обработка post-запроса на отображение записей по фильтру.
+     */
+
     @GetMapping("/main")
     public String main(@RequestParam(required = false, defaultValue = "") String filter,
                        Model model,
-                       @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable, //SQL не гарантирует отсортированную выборку, поэтому сортируем по id и указываем порядок
-                       @AuthenticationPrincipal User user)
-    {
+                       @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable,
+                       //SQL не гарантирует отсортированную выборку, поэтому сортируем по id и указываем порядок
+                       @AuthenticationPrincipal User user) {
         Page<MessageDto> page = messageService.messageList(pageable, filter, user);
 
         model.addAttribute("page", page);
@@ -75,7 +81,7 @@ public class MessageController {
     }
 
     @PostMapping("/main")
-    public String add(
+    public String addMessage(
             @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal User user, //huck для проверки приходит ли user в debuge
             @RequestParam("file") MultipartFile file,
@@ -88,7 +94,7 @@ public class MessageController {
 
         message.setAuthor(user);
 
-        if (bindingResult.hasErrors()){
+        if (bindingResult.hasErrors()) {
             Map<String, String> errorsMap = UtilsController.getErrors(bindingResult);
             model.mergeAttributes(errorsMap); // кладём ошибки в модель для отображения
             model.addAttribute("message", message);
@@ -98,7 +104,7 @@ public class MessageController {
             // данные не отображались на форме ввода
             model.addAttribute("message", null);
 
-            messageRepo.save(message);
+            messageService.saveMessage(message);
         }
 
         Page<MessageDto> page = messageService.messageList(pageable, "", user);
@@ -109,23 +115,6 @@ public class MessageController {
         return "main";
     }
 
-    private void saveFile(MultipartFile file, Message message) throws IOException {
-        if (file != null && !file.getOriginalFilename().isEmpty()) {
-            File uploadDir = new File(uploadPath);
-
-            if (!uploadDir.exists()) { // если директория не существует - создаём новую
-                uploadDir.mkdir();
-            }
-
-            String uuidFile = UUID.randomUUID().toString(); // чтобы не было коллизий, создаём уникальное имя файла
-            String resultFilename = uuidFile + "." + file.getOriginalFilename();
-
-            file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в файл на диске
-
-            message.setFilename(resultFilename);
-        }
-    }
-
     @GetMapping("/user-messages/{author}")
     public String userMessages(
             @AuthenticationPrincipal User currentUser,
@@ -133,8 +122,8 @@ public class MessageController {
             Model model,
             @RequestParam(required = false) Message message,
             @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable
-    ){
-        User author = userRepo.getById(varUser.getId());
+    ) {
+        User author = userService.getUserById(varUser.getId());
 
         Page<MessageDto> page = messageService.messageListForUser(pageable, currentUser, author);
 
@@ -153,50 +142,43 @@ public class MessageController {
     @PostMapping("/user-messages/{user}")
     public String updateMessage(
             @AuthenticationPrincipal User currentUser,
-            @PathVariable(name="user") Long user,
+            @PathVariable(name = "user") Long user,
             @RequestParam("id") Message message,
             @RequestParam("text") String text,
             @RequestParam("tag") String tag,
             @RequestParam("file") MultipartFile file
     ) throws IOException {
-        if(message.getAuthor().equals(currentUser)){
-            if(!text.isEmpty()){
+        if (message.getAuthor().equals(currentUser)) {
+            if (!text.isEmpty()) {
                 message.setText(text);
             }
 
-            if(!tag.isEmpty()){
+            if (!tag.isEmpty()) {
                 message.setTag(tag);
             }
 
             saveFile(file, message);
 
-            messageRepo.save(message);
+            messageService.saveMessage(message);
         }
         return "redirect:/user-messages/" + user;
     }
 
-    @GetMapping("/messages/{message}/like")
-    public String like(
-            @AuthenticationPrincipal User currentUser,
-            @PathVariable Message message,
-            RedirectAttributes redirectAttributes, // позволяют пробросить аргументы в метод в который мы делаем redirect
-            @RequestHeader(required = false) String referer // получаем страницу, с которой пришли с лайком
-    ) {
-        Set<User> likes = message.getLikes();
+    private void saveFile(MultipartFile file, Message message) throws IOException {
+        if (file != null && !file.getOriginalFilename().isEmpty()) {
+            File uploadDir = new File(uploadPath);
 
-        if (likes.contains(currentUser)){
-            likes.remove(currentUser);
-        } else {
-            likes.add(currentUser);
+            if (!uploadDir.exists()) { // если директория не существует - создаём новую
+                uploadDir.mkdir();
+            }
+
+            String uuidFile = UUID.randomUUID().toString(); // чтобы не было коллизий, создаём уникальное имя файла
+            String resultFilename = uuidFile + "." + file.getOriginalFilename();
+
+            file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в файл на диске
+
+            message.setFilename(resultFilename);
         }
-
-        UriComponents components = UriComponentsBuilder.fromHttpUrl(referer).build(); // используется для извлечения параметров с той страницы, откуда мы пришли
-
-        components.getQueryParams()
-                .entrySet()
-                .forEach(pair -> redirectAttributes.addAttribute(pair.getKey(), pair.getValue()));
-
-        return "redirect:" + components.getPath();
     }
 
 }
