@@ -98,7 +98,7 @@ public class MessageController {
         message.setAuthor(user);
 
         if (bindingResult.hasErrors()) {
-            Map<String, String> errorsMap = UtilsController.getErrors(bindingResult);
+            Map<String, String> errorsMap = Utils.getErrors(bindingResult);
             model.mergeAttributes(errorsMap); // кладём ошибки в модель для отображения
             model.addAttribute("message", message);
         } else {

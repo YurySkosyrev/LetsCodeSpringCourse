@@ -14,7 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Set;
 
 /**
- *
+ * Контроллер для работы с лайками
  */
 
 @Controller

@@ -19,13 +19,11 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Дополнительный контроллер для регистрации пользователя
- * По get-запросу отображается view с формой регистрации.
- * Из формы "registration" приходит post-запрос с данными нового юзера
- * если пользователь есть, то в модели передаётся переменная message на форму регистрации,
- * на которой в случае message!=null отображается сообщение
- * Если пользователя с такими данными нет в базе, то он сохраняется в БД.
- * Работа с БД проходит через Autowired объекта UserRepo
+ * Контроллер регистрации пользователя.
+ * Используются проверки на совпадение паролей
+ * на заполнение reCaptcha.
+ * Если всё ОК userService пытается сохранить пользователя
+ * Так же контроллер обрабатывает запрос на активацию пользователя
  */
 
 @Controller
@@ -34,6 +32,7 @@ public class RegistrationController {
 
     private final UserService userService;
     private final RestTemplate restTemplate;
+
 
     @Value("${recaptcha.secret}")
     String secret;
@@ -44,10 +43,12 @@ public class RegistrationController {
         this.restTemplate = restTemplate;
     }
 
+
     @GetMapping("/registration")
     public String registration() {
         return "registration";
     }
+
 
     @PostMapping("/registration")
     public String addUser(
@@ -75,7 +76,7 @@ public class RegistrationController {
         }
 
         if (isConfirmEmpty ||  bindingResult.hasErrors() || !response.isSuccess()) {
-            Map<String, String> errors = UtilsController.getErrors(bindingResult);
+            Map<String, String> errors = Utils.getErrors(bindingResult);
 
             model.mergeAttributes(errors);
 
@@ -89,6 +90,7 @@ public class RegistrationController {
 
         return "redirect:/login";
     }
+
 
     @GetMapping("/activate/{code}")
     public String activate(Model model, @PathVariable String code) {

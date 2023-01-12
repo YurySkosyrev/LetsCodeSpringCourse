@@ -18,18 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * Ниже приведена настройка безопасности, которая гарантирует,
  * что только авторизованные пользователи смогут перейти на главную страницу
  *
- * -> @EnableWebMvcSecurity - включение поддержки безопасности Spring Security и Spring MVC интеграции.
- *
- * Метод configure(HttpSecurity) определяет, какие URL пути должны быть защищены, а какие нет.
- * "/" и "/registration" настроены без требования к авторизации (метод permitAll())
- * Ко всем остальным путям должна быть произведена аутентификация (authenticated())
- *
- * В методе configure(AuthenticationManagerBuilder auth) из БД достаём юзеров, пароли и их роли
- * dataSource нужен для того чтобы ходить в БД
- * passwordEncoder задаёт способ шифрования паролей
- * usersByUsernameQuery нужен для того чтобы система могла найти пользователя по его имени.
- * Запрос именно в таком порядке!!!
- * authoritiesByUsernameQuery - помогает Spring получить список пользователей с их ролями
+ * -> @EnableWebSecurity - включение поддержки безопасности Spring Security и Spring MVC интеграции.
  *
  * -> @EnableGlobalMethodSecurity(prePostEnabled = true) - нужно чтобы в UserController заработала
  * проверка прав доступа у юзера перед выполнением методов
@@ -40,8 +29,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-//    Больше не нужно получаем пользователей с помощью UserService
-//    private final DataSource dataSource;
 
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
@@ -51,6 +38,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
     }
+
+    /**
+     * Метод определяет, какие URL пути должны быть защищены, а какие нет.
+     * "/" и "/registration" настроены без требования к авторизации (метод permitAll())
+     * Ко всем остальным путям должна быть произведена аутентификация (authenticated())*
+     */
 
     @Override
     protected void configure(HttpSecurity http) throws Exception{
@@ -69,11 +62,27 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll();
     }
 
+
+    /**
+     * Метод получения юзеров с паролями и ролями
+     */
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
         auth.userDetailsService(userService)
                 .passwordEncoder(passwordEncoder);
+
+        /**
+         * Другой вариант извлечения пользователей
+         */
+//        /**
+//         * dataSource нужен для того чтобы ходить в БД
+//         * passwordEncoder задаёт способ шифрования паролей
+//         * usersByUsernameQuery нужен для того чтобы система могла найти пользователя по его имени.
+//         * Запрос именно в таком порядке!!!
+//         * authoritiesByUsernameQuery - помогает Spring получить список пользователей с их ролями
+//         */
 //                Вместо запросов получаем пользователей с помощью UserService
 //
 //                auth.jdbcAuthentication()

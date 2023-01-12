@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * Здесь хранятся различные полезные утилиты
  */
 
-public class UtilsController {
+public class Utils {
     static Map<String, String> getErrors(BindingResult bindingResult) { // static т.к. нужно только внутри пакета
         Collector<FieldError, ?, Map<String, String>> collector = Collectors.toMap(
                 fieldError -> fieldError.getField() + "Error",

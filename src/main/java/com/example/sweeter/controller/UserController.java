@@ -31,6 +31,7 @@ public class UserController {
         this.userService = userService;
     }
 
+
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
     public String userList(Model model){
@@ -48,6 +49,7 @@ public class UserController {
         return "userEdit";
     }
 
+
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public String userSave(
@@ -61,7 +63,6 @@ public class UserController {
     }
 
 
-//    @AuthenticationPrincipal User user) - ожидает получение пользователя из контекста, чтобы мы не получали его из БД
     @GetMapping("profile")
     public String getProfile(Model model, @AuthenticationPrincipal User user){
         model.addAttribute("username", user.getUsername());
@@ -69,6 +70,7 @@ public class UserController {
 
         return "profile";
     }
+
 
     @PostMapping("profile")
     public String updateProfile(@AuthenticationPrincipal User user,
@@ -80,6 +82,7 @@ public class UserController {
         return "redirect:/user.profile";
     }
 
+
     @GetMapping("subscribe/{user}")
     public String subscribe(
             @AuthenticationPrincipal User currentUser,
@@ -90,6 +93,7 @@ public class UserController {
         return "redirect:/user-messages/" + user.getId();
     }
 
+
     @GetMapping("unsubscribe/{user}")
     public String unsubscribe(
             @AuthenticationPrincipal User currentUser,
@@ -99,6 +103,7 @@ public class UserController {
 
         return "redirect:/user-messages/" + user.getId();
     }
+
 
     @GetMapping("{type}/{user}/list")
     public String userList(
