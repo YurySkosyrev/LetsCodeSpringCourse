@@ -3,8 +3,6 @@ package com.example.sweeter.controller;
 import com.example.sweeter.domain.Message;
 import com.example.sweeter.domain.User;
 import com.example.sweeter.domain.dto.MessageDto;
-import com.example.sweeter.repository.MessageRepo;
-import com.example.sweeter.repository.UserRepo;
 import com.example.sweeter.service.MessageService;
 import com.example.sweeter.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,13 +35,13 @@ import java.util.UUID;
  */
 
 @Controller
-public class MainController {
+public class MessageController {
 
     private final UserService userService;
     private final MessageService messageService;
 
-    public MainController(UserService userService,
-                          MessageService messageService) {
+    public MessageController(UserService userService,
+                             MessageService messageService) {
         this.userService = userService;
         this.messageService = messageService;
     }
@@ -59,17 +57,16 @@ public class MainController {
     }
 
     /**
-     * Главный контроллер
-     * Обработка get-запроса с отображением всех записей
-     * Обработка post-запроса на добавление новой записи
-     * Обработка post-запроса на отображение записей по фильтру.
+     * Обработка Get запроса и редиректов на URL /main
+     *
+     * SQL не гарантирует отсортированную выборку,
+     * поэтому в аннотации @PagableDefault указываем поле для сортировки и направление
      */
 
     @GetMapping("/main")
     public String main(@RequestParam(required = false, defaultValue = "") String filter,
                        Model model,
                        @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable,
-                       //SQL не гарантирует отсортированную выборку, поэтому сортируем по id и указываем порядок
                        @AuthenticationPrincipal User user) {
         Page<MessageDto> page = messageService.messageList(pageable, filter, user);
 
@@ -80,14 +77,20 @@ public class MainController {
         return "main";
     }
 
+    /**
+     * Обработка Post запроса
+     *
+     * @Valid запускает валидацию
+     * список аргументов и ошибок валидации записывается в bindingResult,
+     * его лучше записывать перед Model, иначе ошибки будут сыпаться во View
+     */
+
     @PostMapping("/main")
     public String addMessage(
             @PageableDefault(sort = {"id"}, direction = Sort.Direction.DESC) Pageable pageable,
-            @AuthenticationPrincipal User user, //huck для проверки приходит ли user в debuge
+            @AuthenticationPrincipal User user,
             @RequestParam("file") MultipartFile file,
-            @Valid Message message, //@Valid запускает валидацию
-            // так как валидация запущена, нужно получать список аргументов и ошибок валидации - bindingResult,
-            // должен идти перед Map иначе все ошибки будут сыпаться во View
+            @Valid Message message,
             BindingResult bindingResult,
             Model model
     ) throws IOException {
@@ -115,6 +118,10 @@ public class MainController {
         return "main";
     }
 
+    /**
+     * Вывод списка сообщений для конкретного пользователя
+     */
+
     @GetMapping("/user-messages/{author}")
     public String userMessages(
             @AuthenticationPrincipal User currentUser,
@@ -138,6 +145,12 @@ public class MainController {
 
         return "userMessages";
     }
+
+    /**
+     * Обновление сообщения
+     * Проверяется принадлежит ли обновляемое сообщение пользователю,
+     * полученному из @AuthenticationPrincipal
+     */
 
     @PostMapping("/user-messages/{user}")
     public String updateMessage(
@@ -164,6 +177,10 @@ public class MainController {
         return "redirect:/user-messages/" + user;
     }
 
+    /**
+     * Сохранение выбранной картинки в папку проекта
+     */
+
     private void saveFile(MultipartFile file, Message message) throws IOException {
         if (file != null && !file.getOriginalFilename().isEmpty()) {
             File uploadDir = new File(uploadPath);
@@ -175,7 +192,7 @@ public class MainController {
             String uuidFile = UUID.randomUUID().toString(); // чтобы не было коллизий, создаём уникальное имя файла
             String resultFilename = uuidFile + "." + file.getOriginalFilename();
 
-            file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в файл на диске
+            file.transferTo(new File(uploadPath + "/" + resultFilename)); // загрузка файла в папку на диске
 
             message.setFilename(resultFilename);
         }

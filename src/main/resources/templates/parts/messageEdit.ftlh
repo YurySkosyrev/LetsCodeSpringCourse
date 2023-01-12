@@ -29,7 +29,7 @@
             <input type="file" class="form-control" id="customFile" name="file"/>
         </div>
         <input type="hidden" name="_csrf" value="${_csrf.token}"/>
-        <input type="hidden" name="id" value="<#if message??>${message.id}</#if>"/>
+        <input type="hidden" name="id" value="<#if message??>${message.id}<#else>-1</#if>" />
         <div class="input-group mb-3">
             <button type="submit" class="btn btn-primary">Save Message</button>
         </div>

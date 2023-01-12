@@ -1,6 +1,6 @@
 package com.example.sweeter;
 
-import com.example.sweeter.controller.MainController;
+import com.example.sweeter.controller.MessageController;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +33,7 @@ public class MainControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private MainController mainController;
+    private MessageController mainController;
 
     @Test
     public void mainPageTest() throws Exception {
